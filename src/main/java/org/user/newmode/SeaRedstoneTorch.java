@@ -2,13 +2,14 @@ package org.user.newmode;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.RedstoneTorchBlock;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -18,13 +19,15 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraft.world.level.lighting.LightEngine;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import org.joml.Vector3f;
 
 @Mod(SeaRedstoneTorch.MODID)
 public class SeaRedstoneTorch {
@@ -34,14 +37,14 @@ public class SeaRedstoneTorch {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(MODID);
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MODID);
 
-    public static final DeferredBlock<RedstoneTorchBlock> SEA_REDSTONE_TORCH =
+    public static final DeferredBlock<WaterSafeRedstoneTorchBlock> SEA_REDSTONE_TORCH =
             BLOCKS.register("sea_redstone_torch",
                     () -> new WaterSafeRedstoneTorchBlock(
                             BlockBehaviour.Properties.of()
                                     .mapColor(MapColor.FIRE)
                                     .noCollission()
                                     .instabreak()
-                                    .lightLevel(state -> 7)
+                                    .lightLevel(state -> state.getValue(WaterSafeRedstoneTorchBlock.LIT) ? 7 : 0)
                     )
             );
 
@@ -64,18 +67,28 @@ public class SeaRedstoneTorch {
     }
 
     // =========================================================
-    // 💧 WATERLOGGED REDSTONE TORCH
+    // === МОРСКОЙ ФАКЕЛ С СИНИМИ ПАРТИКЛАМИ ===
     // =========================================================
     public static class WaterSafeRedstoneTorchBlock extends RedstoneTorchBlock implements SimpleWaterloggedBlock {
 
-        public static final BooleanProperty WATERLOGGED = net.minecraft.world.level.block.state.properties.BlockStateProperties.WATERLOGGED;
+        public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+        
+        // Синий цвет для партиклов (RGB: 0.2, 0.4, 1.0)
+        private static final Vector3f SEA_COLOR = new Vector3f(0.2f, 0.4f, 1.0f);
+        private static final DustParticleOptions SEA_PARTICLE = new DustParticleOptions(SEA_COLOR, 1.0f);
 
         public WaterSafeRedstoneTorchBlock(Properties properties) {
             super(properties);
+
             this.registerDefaultState(this.stateDefinition.any()
                     .setValue(WATERLOGGED, false)
                     .setValue(LIT, true)
             );
+        }
+
+        @Override
+        public RenderShape getRenderShape(BlockState state) {
+            return RenderShape.MODEL;
         }
 
         @Override
@@ -87,6 +100,7 @@ public class SeaRedstoneTorch {
         @Override
         public BlockState getStateForPlacement(net.minecraft.world.item.context.BlockPlaceContext context) {
             FluidState fluidstate = context.getLevel().getFluidState(context.getClickedPos());
+
             return super.getStateForPlacement(context)
                     .setValue(WATERLOGGED, fluidstate.getType() == Fluids.WATER);
         }
@@ -116,6 +130,17 @@ public class SeaRedstoneTorch {
         @Override
         public int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
             return direction == Direction.DOWN ? 0 : super.getSignal(state, level, pos, direction);
+        }
+
+        // === СИНИЕ ПАРТИКЛЫ ===
+        @Override
+        public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+            if (state.getValue(LIT)) {
+                double d0 = (double)pos.getX() + 0.5D + (random.nextDouble() - 0.5D) * 0.2D;
+                double d1 = (double)pos.getY() + 0.7D + (random.nextDouble() - 0.5D) * 0.2D;
+                double d2 = (double)pos.getZ() + 0.5D + (random.nextDouble() - 0.5D) * 0.2D;
+                level.addParticle(SEA_PARTICLE, d0, d1, d2, 0.0D, 0.0D, 0.0D);
+            }
         }
     }
 }

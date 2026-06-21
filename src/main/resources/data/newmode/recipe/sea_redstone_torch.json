@@ -1,0 +1,19 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "I",
+        "T"
+    ],
+    "key": {
+        "I": {
+            "item": "minecraft:ice"
+        },
+        "T": {
+            "item": "minecraft:redstone_torch"
+        }
+    },
+    "result": {
+        "id": "newmode:sea_redstone_torch",
+        "count": 1
+    }
+}

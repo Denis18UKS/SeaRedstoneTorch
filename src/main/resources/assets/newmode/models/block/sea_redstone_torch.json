@@ -1,6 +1,7 @@
 {
-  "parent": "minecraft:block/template_torch",
+  "parent": "minecraft:block/torch",
   "textures": {
-    "torch": "minecraft:block/sea_redstone_torch"
+    "torch": "newmode:block/sea_redstone_torch",
+    "particle": "newmode:block/sea_redstone_torch"
   }
 }
